@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Snakejs</title>
+</head>
+<body>
+    <div id="scoreboard"></div>
+    <canvas id="gyrogame" width="300" height="300"/>
+    <script src="js/gyro.js"></script>
+    <script>
+        function score(score) {
+            "use strict";
+            var div = document.getElementById('scoreboard');
+            div.innerText = score;
+        }
+        var game = new GyroGame({
+                                    field: '#2E3340',
+                                    ball: '#9FFCB9',
+                                    padle: '#C4B9A9'
+                                }, "gyrogame", score);
+        game.init();
+    </script>
+    <style>
+        canvas {
+            margin: auto;
+            display: block;
+        }
+        #scoreboard {
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0;
+            display: block;
+            width: 500px;
+            text-align: center;
+            font-size: 2em;
+            font-family: verdana;
+            color: #2E3340;
+        }
+    </style>
+</body></html>
