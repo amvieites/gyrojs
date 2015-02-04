@@ -1,5 +1,19 @@
 /*global console */
 var PI = Math.PI;
+var stages = [{
+    name: 'ONE',
+    ball_radius: 3,
+    waves: [
+        {offset: 2000, angle: 0,            speed: 0.10},
+        {offset: 2500, angle: PI / 4,       speed: 0.10},
+        {offset: 3000, angle: PI / 2,       speed: 0.10},
+        {offset: 3500, angle: 3 * PI / 4,   speed: 0.10},
+        {offset: 4000, angle: PI,           speed: 0.10},
+        {offset: 4500, angle: 5 * PI / 4,       speed: 0.10},
+        {offset: 5000, angle: 3 * PI / 2,       speed: 0.10},
+        {offset: 5500, angle: 7 * PI / 4,   speed: 0.10}
+    ]
+}];
 
 function Point(x, y) {
     "use strict";
@@ -7,6 +21,29 @@ function Point(x, y) {
     this.y = y;
 }
 
+function Ball(game, /* Point */ position, radius, direction, speed) {
+    "use strict";
+    this.game = game;
+    this.position = position;
+    this.radius = radius;
+    this.direction = direction;
+    this.speed = speed;
+}
+
+Ball.prototype.update = function (delta) {
+    "use strict";
+    
+    this.position.x += this.speed * delta * Math.cos(this.direction);
+    this.position.y += this.speed * delta * Math.sin(this.direction);
+};
+
+Ball.prototype.draw = function () {
+    "use strict";
+    this.game.ctx.beginPath();
+    this.game.ctx.arc(this.position.x, this.position.y, this.radius, 0, 2 * PI, false);
+    this.game.ctx.fillStyle = this.game.skin.ball;
+    this.game.ctx.fill();
+};
 
 function Padle(game, /* Point */ center, radius, starting_angle, ending_angle) {
     "use strict";
@@ -37,6 +74,57 @@ Padle.prototype.draw = function () {
     this.game.ctx.stroke();
 };
 
+function Stage(game, descriptor) {
+    "use strict";
+    this.game = game;
+    this.name = descriptor.name;
+    this.ball_radius = descriptor.ball_radius;
+    this.waves = descriptor.waves;
+    this.wave = 0;
+    this.padle = new Padle(this.game, new Point(150, 150), 100, 6 * PI / 4, 7 * PI / 4);
+    this.balls = new Array(this.waves.length);
+}
+
+Stage.prototype.init = function () {
+    "use strict";
+    this.start_time = new Date().getTime();
+};
+
+Stage.prototype.update = function (delta) {
+    "use strict";
+    var b, i, wave_conf;
+    
+    this.padle.update(delta);
+    
+    for (i = this.wave; i < this.waves.length; i = i + 1) {
+        wave_conf = this.waves[i];
+        if (wave_conf.offset < (new Date().getTime() - this.start_time)) {
+            this.wave += 1;
+            this.balls[i] = new Ball(this.game, new Point(this.padle.center.x, this.padle.center.y), this.ball_radius, wave_conf.angle, wave_conf.speed);
+            break;
+        }
+    }
+    
+    for (b in this.balls) {
+        if (this.balls.hasOwnProperty(b)) {
+            this.balls[b].update(delta);
+        }
+    }
+};
+
+Stage.prototype.draw = function () {
+    "use strict";
+    var b;
+    
+    this.padle.draw();
+    
+    for (b in this.balls) {
+        if (this.balls.hasOwnProperty(b)) {
+            this.balls[b].draw();
+        }
+    }
+};
+
 /**
   * skin: padle, field, ball
   */
@@ -64,15 +152,21 @@ GyroGame.prototype.init = function () {
     "use strict";
     this.playing = true;
     this.scoring = 0;
-    this.padle = new Padle(this, new Point(150, 150), 100, 6 * PI / 4, 7 * PI / 4);
+    this.current_stage = new Stage(this, stages[0]);
+    
+    this.current_stage.init();
     
     this.loop();
 };
 
 GyroGame.prototype.update = function () {
     "use strict";
+    var now = new Date().getTime(),
+        delta = now - this.lastFrameTime;
     
-    this.padle.update();
+    this.current_stage.update(delta);
+    
+    this.lastFrameTime = now;
 };
 
 GyroGame.prototype.draw = function () {
@@ -82,9 +176,8 @@ GyroGame.prototype.draw = function () {
     this.ctx.fillStyle = this.skin.field;
     this.ctx.fillRect(0, 0, this.width, this.height);
     this.ctx.save();
-    
-    this.padle.draw();
-    
+
+    this.current_stage.draw();
     this.score_function(this.scoring);
     
     this.ctx.restore();
