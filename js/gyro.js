@@ -4,14 +4,14 @@ var stages = [{
     name: 'ONE',
     ball_radius: 3,
     waves: [
-        {offset: 2000, angle: 0,            speed: 0.10},
-        {offset: 2500, angle: PI / 4,       speed: 0.10},
-        {offset: 3000, angle: PI / 2,       speed: 0.10},
-        {offset: 3500, angle: 3 * PI / 4,   speed: 0.10},
-        {offset: 4000, angle: PI,           speed: 0.10},
-        {offset: 4500, angle: 5 * PI / 4,       speed: 0.10},
-        {offset: 9000, angle: 3 * PI / 2,       speed: 0.10},
-        {offset: 9500, angle: 7 * PI / 4,   speed: 0.10}
+        {offset: 2000, angle: 0,            speed: 0.10, ttl: 1},
+        {offset: 2500, angle: PI / 4,       speed: 0.10, ttl: 1},
+        {offset: 3000, angle: PI / 2,       speed: 0.10, ttl: 1},
+        {offset: 3500, angle: 3 * PI / 4,   speed: 0.10, ttl: 2},
+        {offset: 4000, angle: PI,           speed: 0.10, ttl: 1},
+        {offset: 4500, angle: 5 * PI / 4,   speed: 0.10, ttl: 1},
+        {offset: 9000, angle: 3 * PI / 2,   speed: 0.10, ttl: 2},
+        {offset: 9500, angle: 7 * PI / 4,   speed: 0.10, ttl: 2}
     ]
 }];
 
@@ -27,13 +27,14 @@ Point.prototype.distance = function (point) {
     return Math.sqrt(Math.pow(point.x - this.x, 2) + Math.pow(point.y - this.y, 2));
 };
 
-function Ball(game, /* Point */ position, radius, direction, speed) {
+function Ball(game, /* Point */ position, radius, direction, speed, ttl) {
     "use strict";
     this.game = game;
     this.position = position;
     this.radius = radius;
     this.direction = direction;
     this.speed = speed;
+    this.ttl = ttl;
 }
 
 Ball.prototype.update = function (delta) {
@@ -111,14 +112,18 @@ Stage.prototype.update = function (delta) {
         wave_conf = this.waves[i];
         if (wave_conf.offset < (new Date().getTime() - this.start_time)) {
             this.wave += 1;
-            this.balls[i] = new Ball(this.game, new Point(this.padle.center.x, this.padle.center.y), this.ball_radius, wave_conf.angle, wave_conf.speed);
+            this.balls[i] = new Ball(this.game, new Point(this.padle.center.x, this.padle.center.y), this.ball_radius, wave_conf.angle, wave_conf.speed, wave_conf.ttl);
             break;
         }
     }
     
     for (b in this.balls) {
         if (this.balls.hasOwnProperty(b)) {
-            this.balls[b].update(delta);
+            if (this.balls[b].ttl === 0) {
+                this.balls.splice(b, 1);
+            } else {
+                this.balls[b].update(delta);
+            }
         }
     }
 };
@@ -176,11 +181,12 @@ GyroGame.prototype.collide = function (padle, ball) {
         ball_border = distance + ball.radius,
         padle_border_int = padle.distance_to_center - padle.width / 2,
         padle_border_ext = padle.distance_to_center + padle.width / 2;
-    console.log("padle position: " + padle.start + ", " + padle.end);
+    //console.log("padle position: " + padle.start + ", " + padle.end);
     if (padle.start < ball.direction && ball.direction < padle.end && ball_border > padle_border_int && ball_border < padle_border_ext) {
-        console.log("Collision at distance " + distance
-                    + "\n ball direction: " + ball.direction);
+        //console.log("Collision at distance " + distance
+        //            + "\n ball direction: " + ball.direction);
         ball.direction -= PI;
+        ball.ttl -= 1;
     }
 };
 
