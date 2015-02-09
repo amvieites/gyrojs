@@ -10,8 +10,8 @@ var stages = [{
         {offset: 3500, angle: 3 * PI / 4,   speed: 0.10},
         {offset: 4000, angle: PI,           speed: 0.10},
         {offset: 4500, angle: 5 * PI / 4,       speed: 0.10},
-        {offset: 5000, angle: 3 * PI / 2,       speed: 0.10},
-        {offset: 5500, angle: 7 * PI / 4,   speed: 0.10}
+        {offset: 9000, angle: 3 * PI / 2,       speed: 0.10},
+        {offset: 9500, angle: 7 * PI / 4,   speed: 0.10}
     ]
 }];
 
@@ -20,6 +20,12 @@ function Point(x, y) {
     this.x = x;
     this.y = y;
 }
+
+Point.prototype.distance = function (point) {
+    "use strict";
+    
+    return Math.sqrt(Math.pow(point.x - this.x, 2) + Math.pow(point.y - this.y, 2));
+};
 
 function Ball(game, /* Point */ position, radius, direction, speed) {
     "use strict";
@@ -49,7 +55,8 @@ function Padle(game, /* Point */ center, radius, starting_angle, ending_angle) {
     "use strict";
     this.game = game;
     this.center = center;
-    this.radius = radius;
+    this.width = 5;
+    this.distance_to_center = radius;
     this.start = starting_angle;
     this.end = ending_angle;
 }
@@ -59,7 +66,9 @@ Padle.prototype.update = function () {
     var increment = this.game.mouse.y - this.game.mouse_old.y;
     increment *= 25;
     this.start = ((this.start * 1000 + increment) % (2 * PI * 1000)) / 1000;
+    this.start = this.start < 0 ? 2 * PI + this.start : this.start;
     this.end = ((this.end * 1000 + increment) % (2 * PI * 1000)) / 1000;
+    this.end = this.end < 0 ? 2 * PI + this.end : this.end;
     
     this.game.mouse_old.y = this.game.mouse.y;
 };
@@ -68,8 +77,8 @@ Padle.prototype.draw = function () {
     "use strict";
     
     this.game.ctx.beginPath();
-    this.game.ctx.arc(this.center.x, this.center.y, this.radius, this.start, this.end, false);
-    this.game.ctx.lineWidth = 5;
+    this.game.ctx.arc(this.center.x, this.center.y, this.distance_to_center, this.start, this.end, false);
+    this.game.ctx.lineWidth = this.width;
     this.game.ctx.strokeStyle = this.game.skin.padle;
     this.game.ctx.stroke();
 };
@@ -95,6 +104,8 @@ Stage.prototype.update = function (delta) {
     var b, i, wave_conf;
     
     this.padle.update(delta);
+    
+    this.game.collideAll(this.padle, this.balls);
     
     for (i = this.wave; i < this.waves.length; i = i + 1) {
         wave_conf = this.waves[i];
@@ -157,6 +168,36 @@ GyroGame.prototype.init = function () {
     this.current_stage.init();
     
     this.loop();
+};
+
+GyroGame.prototype.collide = function (padle, ball) {
+    "use strict";
+    var distance = padle.center.distance(ball.position),
+        ball_border = distance + ball.radius,
+        padle_border_int = padle.distance_to_center - padle.width / 2,
+        padle_border_ext = padle.distance_to_center + padle.width / 2;
+    console.log("padle position: " + padle.start + ", " + padle.end);
+    if (padle.start < ball.direction && ball.direction < padle.end && ball_border > padle_border_int && ball_border < padle_border_ext) {
+        console.log("Collision at distance " + distance
+                    + "\n ball direction: " + ball.direction);
+        ball.direction -= PI;
+    }
+};
+
+GyroGame.prototype.collideAll = function (padle, balls) {
+    "use strict";
+    var b, collision, collide_balls = [];
+    
+    for (b in balls) {
+        if (balls.hasOwnProperty(b)) {
+            collision = this.collide(padle, balls[b]);
+            if (collision !== undefined) {
+                collide_balls.push();
+            }
+        }
+    }
+    
+    return collide_balls;
 };
 
 GyroGame.prototype.update = function () {
