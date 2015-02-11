@@ -3,17 +3,32 @@ var PI = Math.PI;
 var stages = [{
     name: 'ONE',
     ball_radius: 3,
+    padle_size: PI / 4,
     waves: [
         {offset: 2000, angle: 0,            speed: 0.10, ttl: 1},
+        {offset: 2500, angle: PI / 8,       speed: 0.10, ttl: 1},
         {offset: 2500, angle: PI / 4,       speed: 0.10, ttl: 1},
         {offset: 3000, angle: PI / 2,       speed: 0.10, ttl: 1},
-        {offset: 3500, angle: 3 * PI / 4,   speed: 0.10, ttl: 2},
+        {offset: 3500, angle: 3 * PI / 4,   speed: 0.10, ttl: 5},
         {offset: 4000, angle: PI,           speed: 0.10, ttl: 1},
         {offset: 4500, angle: 5 * PI / 4,   speed: 0.10, ttl: 1},
-        {offset: 9000, angle: 3 * PI / 2,   speed: 0.10, ttl: 2},
-        {offset: 9500, angle: 7 * PI / 4,   speed: 0.10, ttl: 2}
+        {offset: 9000, angle: 3 * PI / 2,   speed: 0.10, ttl: 1},
+        {offset: 9500, angle: 7 * PI / 4,   speed: 0.10, ttl: 1}
     ]
 }];
+
+function normalize(a) {
+    "use strict";
+    var na = a;
+    
+    if (a < 0) {
+        na = 2 * PI + a;
+    } else if (a > 2 * PI) {
+        na = (a * 1000) % (2 * PI) / 1000;
+    }
+    
+    return na;
+}
 
 function Point(x, y) {
     "use strict";
@@ -32,7 +47,7 @@ function Ball(game, /* Point */ position, radius, direction, speed, ttl) {
     this.game = game;
     this.position = position;
     this.radius = radius;
-    this.direction = direction;
+    this.direction = normalize(direction);
     this.speed = speed;
     this.ttl = ttl;
 }
@@ -52,24 +67,21 @@ Ball.prototype.draw = function () {
     this.game.ctx.fill();
 };
 
-function Padle(game, /* Point */ center, radius, starting_angle, ending_angle) {
+function Padle(game, /* Point */ center, radius, start, angle) {
     "use strict";
     this.game = game;
     this.center = center;
     this.width = 5;
     this.distance_to_center = radius;
-    this.start = starting_angle;
-    this.end = ending_angle;
+    this.start = normalize(start);
+    this.angle = normalize(angle);
 }
 
 Padle.prototype.update = function () {
     "use strict";
     var increment = this.game.mouse.y - this.game.mouse_old.y;
     increment *= 25;
-    this.start = ((this.start * 1000 + increment) % (2 * PI * 1000)) / 1000;
-    this.start = this.start < 0 ? 2 * PI + this.start : this.start;
-    this.end = ((this.end * 1000 + increment) % (2 * PI * 1000)) / 1000;
-    this.end = this.end < 0 ? 2 * PI + this.end : this.end;
+    this.start = normalize(((this.start * 1000 + increment) % (2 * PI * 1000)) / 1000);
     
     this.game.mouse_old.y = this.game.mouse.y;
 };
@@ -78,7 +90,7 @@ Padle.prototype.draw = function () {
     "use strict";
     
     this.game.ctx.beginPath();
-    this.game.ctx.arc(this.center.x, this.center.y, this.distance_to_center, this.start, this.end, false);
+    this.game.ctx.arc(this.center.x, this.center.y, this.distance_to_center, this.start, this.start + this.angle, false);
     this.game.ctx.lineWidth = this.width;
     this.game.ctx.strokeStyle = this.game.skin.padle;
     this.game.ctx.stroke();
@@ -88,10 +100,11 @@ function Stage(game, descriptor) {
     "use strict";
     this.game = game;
     this.name = descriptor.name;
+    this.padle_size = descriptor.padle_size;
     this.ball_radius = descriptor.ball_radius;
     this.waves = descriptor.waves;
     this.wave = 0;
-    this.padle = new Padle(this.game, new Point(150, 150), 100, 6 * PI / 4, 7 * PI / 4);
+    this.padle = new Padle(this.game, new Point(150, 150), 100, 6 * PI / 4, this.padle_size);
     this.balls = new Array(this.waves.length);
 }
 
@@ -181,12 +194,12 @@ GyroGame.prototype.collide = function (padle, ball) {
         ball_border = distance + ball.radius,
         padle_border_int = padle.distance_to_center - padle.width / 2,
         padle_border_ext = padle.distance_to_center + padle.width / 2;
-    //console.log("padle position: " + padle.start + ", " + padle.end);
-    if (padle.start < ball.direction && ball.direction < padle.end && ball_border > padle_border_int && ball_border < padle_border_ext) {
-        //console.log("Collision at distance " + distance
-        //            + "\n ball direction: " + ball.direction);
-        ball.direction -= PI;
-        ball.ttl -= 1;
+    console.log("start: " + padle.start + " end: " + (padle.start + padle.angle));
+    if (ball_border > padle_border_int && ball_border < padle_border_ext) {
+        if ((padle.start + padle.angle < 2 * PI && padle.start < ball.direction && ball.direction < padle.start + padle.angle) || (padle.start + padle.angle >= 2 * PI && normalize(padle.start + padle.angle) > ball.direction)) {
+            ball.direction = normalize((((ball.direction + PI) * 1000) % (2 * PI * 1000)) / 1000);
+            ball.ttl -= 1;
+        }
     }
 };
 
