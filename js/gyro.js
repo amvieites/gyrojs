@@ -6,14 +6,20 @@ var stages = [{
     padle_size: PI / 4,
     waves: [
         {offset: 2000, angle: 0,            speed: 0.10, ttl: 1},
-        {offset: 2500, angle: PI / 8,       speed: 0.10, ttl: 2},
-        {offset: 2500, angle: PI / 4,       speed: 0.10, ttl: 2},
-        {offset: 3000, angle: PI / 2,       speed: 0.10, ttl: 1},
-        {offset: 3500, angle: 3 * PI / 4,   speed: 0.10, ttl: 3},
-        {offset: 4000, angle: PI,           speed: 0.10, ttl: 1},
-        {offset: 4500, angle: 5 * PI / 4,   speed: 0.10, ttl: 2},
+        {offset: 2500, angle: PI / 8,       speed: 0.10, ttl: 1},
+        {offset: 3000, angle: PI / 7,       speed: 0.10, ttl: 1},
+        {offset: 3500, angle: PI / 6,       speed: 0.10, ttl: 1},
+        {offset: 4000, angle: PI / 5,       speed: 0.10, ttl: 1},
+        {offset: 4500, angle: PI,           speed: 0.10, ttl: 1},
+        {offset: 5000, angle: 5 * PI / 4,   speed: 0.10, ttl: 1},
         {offset: 5500, angle: 3 * PI / 2,   speed: 0.10, ttl: 1},
-        {offset: 5500, angle: 7 * PI / 4,   speed: 0.10, ttl: 2}
+        {offset: 5750, angle: 7 * PI / 4,   speed: 0.10, ttl: 2},
+        {offset: 6250, angle: PI / 2,       speed: 0.10, ttl: 1},
+        {offset: 6500, angle: 3 * PI / 4,   speed: 0.10, ttl: 3},
+        {offset: 7000, angle: PI,           speed: 0.10, ttl: 1},
+        {offset: 7500, angle: 5 * PI / 4,   speed: 0.10, ttl: 2},
+        {offset: 8500, angle: 3 * PI / 2,   speed: 0.10, ttl: 1},
+        {offset: 9500, angle: 7 * PI / 4,   speed: 0.10, ttl: 2}
     ]
 }];
 
@@ -142,6 +148,10 @@ Stage.prototype.update = function (delta) {
                 this.balls[b].update(delta);
             }
         }
+    }
+    
+    if (this.balls.length === 0) {
+        this.game.playing = false;
     }
 };
 
